@@ -2,7 +2,12 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const port = 3000;
 const app = express();
+const zod = require("zod");
 
+const loginSchema = zod.object({
+    userName: zod.string().email(),
+    password: zod.string().min(8)
+})
 
 //middleware
 app.use(bodyParser.urlencoded());
@@ -13,17 +18,25 @@ var users = [
     { id: 2, username: 'vinit', age: '30' },
     { id: 3, username: 'rohan', age: '40' }
 ];
-function login(req, res, next){
+function login(req, res, next) {
     const userName = req.body.userName;
     const password = req.body.password;
-    if(userName != 'vinitk' || password != 12345){
-        res.status(403).json({ message: 'Password is incorrect'});
-        return; // early returning
+    const zodRepsonse = loginSchema.safeParse(req.body);
+    console.log(zodRepsonse);
+    if (zodRepsonse.success) {
+        if (userName != 'vinitk@gmail.com' || password != 12345678) {
+            res.status(403).json({ message: 'Username or Password is incorrect' });
+            return; // early returning
+        }
+    } else {
+
+        res.status(403).json({ message: zodRepsonse.error.issues[0].message });
+        return;
     }
     next();
 }
 let numberOFRequests = 0;
-function calculateRequest(req, res, next){
+function calculateRequest(req, res, next) {
     numberOFRequests += 1; next();
     console.log(`[Request count]: ${numberOFRequests}`)
 }
@@ -32,7 +45,7 @@ app.get("/", (req, response) => {
     response.send("Active");
 })
 app.post("/login", login, (req, response) => {
-    
+
     response.json({ message: 'Welcome here' });
 })
 app.get("/users", (req, response) => {
@@ -51,11 +64,11 @@ app.post("/user", (req, response) => {
 app.put("/user", (req, response) => {
     const id = req.body.id;
     const username = req.body.username;
-    const age= req.body.age;
-    for(let i = 0; i < users.length; i++) {
-        if(users[i].id == id){
-            if(username!= undefined) users[i].username = username;
-            if(age!= undefined) users[i].age = age;
+    const age = req.body.age;
+    for (let i = 0; i < users.length; i++) {
+        if (users[i].id == id) {
+            if (username != undefined) users[i].username = username;
+            if (age != undefined) users[i].age = age;
         }
     }
     response.json(users);
